@@ -5,10 +5,13 @@ const logger       = require('morgan');
 const cookieParser = require('cookie-parser');
 const bodyParser   = require('body-parser');
 const mongoose     = require("mongoose");
-const bcrypt     = require("bcrypt");
-const saltRounds = 10;
-const session    = require("express-session");
-const MongoStore = require("connect-mongo")(session);
+const session       = require("express-session");
+const MongoStore  = require("connect-mongo")(session);
+const bcrypt      = require("bcrypt");
+const saltRounds  = 10;
+
+const passport    = require("passport");
+const LocalStrategy = require("passport-local").Strategy;
 
 const authRoutes = require('./routes/authRoutes');
 const siteRoutes = require('./routes/siteRoutes');
@@ -33,7 +36,6 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/', siteRoutes);
 app.use('/', authRoutes);
 
-
 app.use(session({
   secret: "basic-auth-secret",
   cookie: { maxAge: 60000 },
@@ -43,6 +45,14 @@ app.use(session({
   })
 }));
 
+app.use(session({
+  secret: "our-passport-local-strategy-app",
+  resave: true,
+  saveUninitialized: true
+}));
+
+app.use(passport.initialize());
+app.use(passport.session());
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

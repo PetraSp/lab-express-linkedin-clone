@@ -11,12 +11,18 @@ authRoutes.get("/signup", (req, res, next) => {
   res.render("auth/signup");
 });
 
+authRoutes.get('/home', (req,res,next) => {
+  res.render('home');
+})
+
+
 
 authRoutes.post("/signup", (req, res, next) => {
-  var username = req.body.username;
-  var password = req.body.password;
-  var salt     = bcrypt.genSaltSync(saltRounds);
-  var hashPass = bcrypt.hashSync(password, salt);
+  const username = req.body.username;
+  const password = req.body.password;
+
+  const salt     = bcrypt.genSaltSync(saltRounds);
+  const hashPass = bcrypt.hashSync(password, salt);
 
   if (username === "" || password === "") {
   res.render("auth/signup", {
@@ -38,17 +44,19 @@ User.findOne({ "username": username },
 
 //creating an object
   var newUser  = User({
-    username,
+    username: username,
     password: hashPass
   });
 
 //create a new user in the database
   newUser.save((err) => {
-    if (err) throw err;
-//If the user hasn't started a session, he should be redirected to /login page.
-    res.redirect("/");
+      if (err) {
+        res.render("auth/signup", { message: "Something went wrong" });
+      } else {
+        res.redirect("/");
+      }
   });
-      })
+      });
 });
 
 authRoutes.get("/login", (req, res, next) => {
@@ -75,8 +83,8 @@ authRoutes.post("/login", (req, res, next) => {
       }
       if (bcrypt.compareSync(password, user.password)) {
         // Save the login in the session!
-        req.session.currentUser = user;
-        res.redirect("/index");
+        //req.session.currentUser = user;
+        res.redirect("home");
       } else {
         res.render("auth/login", {
           errorMessage: "Incorrect password"
