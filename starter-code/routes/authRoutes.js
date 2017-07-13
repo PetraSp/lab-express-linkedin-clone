@@ -1,9 +1,10 @@
-var express = require('express');
+const express = require('express');
 const User = require("../models/user");
 const bcrypt     = require("bcrypt");
 const saltRounds = 10;
 
 const authRoutes = express.Router();
+const passport = require("passport");
 
 
 /* GET home page. */ //show form
@@ -12,17 +13,13 @@ authRoutes.get("/signup", (req, res, next) => {
 });
 
 authRoutes.get('/home', (req,res,next) => {
-  res.render('home');
+  res.render('home',{ user: req.user });
 })
-
 
 
 authRoutes.post("/signup", (req, res, next) => {
   const username = req.body.username;
   const password = req.body.password;
-
-  const salt     = bcrypt.genSaltSync(saltRounds);
-  const hashPass = bcrypt.hashSync(password, salt);
 
   if (username === "" || password === "") {
   res.render("auth/signup", {
@@ -42,8 +39,10 @@ User.findOne({ "username": username },
       return;
     }
 
+const salt     = bcrypt.genSaltSync(bcryptSalt);
+const hashPass = bcrypt.hashSync(password, salt);
 //creating an object
-  var newUser  = User({
+  const newUser  = User({
     username: username,
     password: hashPass
   });
@@ -60,47 +59,20 @@ User.findOne({ "username": username },
 });
 
 authRoutes.get("/login", (req, res, next) => {
-  res.render("auth/login");
+  res.render("auth/login", { "message": req.flash("error") });
 });
 
-authRoutes.post("/login", (req, res, next) => {
-  var username = req.body.username;
-  var password = req.body.password;
+authRoutes.post("/login", passport.authenticate("local", {
+  successRedirect: "../home",
+  failureRedirect: "/login",
+  failureFlash: true,
+  passReqToCallback: true
+}));
 
-  if (username === "" || password === "") {
-    res.render("auth/login", {
-      errorMessage: "Indicate a username and a password to sign up"
-    });
-    return;
-  }
 
-  User.findOne({ "username": username }, (err, user) => {
-      if (err || !user) {
-        res.render("auth/login", {
-          errorMessage: "The username doesn't exist"
-        });
-        return;
-      }
-      if (bcrypt.compareSync(password, user.password)) {
-        // Save the login in the session!
-        //req.session.currentUser = user;
-        res.redirect("home");
-      } else {
-        res.render("auth/login", {
-          errorMessage: "Incorrect password"
-        });
-      }
-  });
+authRoutes.get("/logout", (req, res) => {
+  req.logout();
+  res.redirect("/login");
 });
-
-
-
-authRoutes.get("/logout", (req, res, next) => {
-  req.session.destroy((err) => {
-    // cannot access session here
-    res.redirect("/login");
-  });
-});
-
 
 module.exports = authRoutes;
